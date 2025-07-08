@@ -1,16 +1,3 @@
-// Copyright 2024 Espressif Systems (Shanghai) PTE LTD
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
 
 /**
  * @brief This example demonstrates Zigbee temperature sensor.
@@ -23,11 +10,11 @@
  *
  * Please check the README.md for instructions and more detailed description.
  *
- * Created by Jan Procházka (https://github.com/P-R-O-C-H-Y/)
+ * Created by dbn-b4e based on ESP32-Arduino examples and tweaks
  */
 
-#ifndef ZIGBEE_MODE_ED
-// #error "Zigbee end device mode is not selected in Tools->Zigbee mode"
+#ifndef ZIGBEE_MODE_ZCZR
+  #error "Zigbee coordinator mode is not selected in Tools->Zigbee mode"
 #endif
 
 #include "Zigbee.h"
@@ -39,17 +26,21 @@
 #define BUTTON_ENDPOINT_NUMBER          30
 #define CONTACT_SWITCH_ENDPOINT_NUMBER  40
 
-#define ZIGBEE_ROLE ZIGBEE_ROUTER
+#define ZIGBEE_ROLE ZIGBEE_ROUTER // Can be ZIGBEE_ED if no router required (battery)
 
 /* Zigbee OTA configuration */
 #define OTA_UPGRADE_RUNNING_FILE_VERSION    0x01010100  // Increment this value when the running image is updated
 #define OTA_UPGRADE_DOWNLOADED_FILE_VERSION 0x01010101  // Increment this value when the downloaded image is updated
 #define OTA_UPGRADE_HW_VERSION              0x0101      // The hardware version, this can be used to differentiate between different hardware versions
 
+#define LED_PIN           8
+#define BOOT_BUTTON_PIN   9
 
-uint8_t button = 9;
-uint8_t sensor_pin = 9;
-#define LED_PIN 8
+
+// Assign globals to defines
+uint8_t button = BOOT_BUTTON_PIN;
+uint8_t sensor_pin = BOOT_BUTTON_PIN;
+
 
 typedef enum {
   SWITCH_ON_CONTROL,
@@ -207,6 +198,9 @@ void setup() {
   Serial.println("Local time with timezone:");
   Serial.println(localTime, "%A, %B %d %Y %H:%M:%S");
 
+  // Set default state for IAS
+  zbContactSwitch.setClosed();
+
   // Start Temperature sensor reading task
   xTaskCreate(temp_sensor_value_update, "temp_sensor_update", 2048, NULL, 10, NULL);
 
@@ -226,7 +220,7 @@ void setup() {
 void loop() {
 
   // Checking pin for contact change
-#if 0
+#if 1
   static bool contact = false;
   if (digitalRead(sensor_pin) == HIGH && !contact)
   {
@@ -243,7 +237,7 @@ void loop() {
   }
 #endif
 
-  // Checking button for factory reset
+  // Checking button for change
   if (digitalRead(button) == LOW)
   {  // Push button pressed
     // Key debounce handling
